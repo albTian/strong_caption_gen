@@ -8,7 +8,7 @@ TEMP_CSV = 'temp.csv'
 # For List[Weight] and List[List[Reps]], generate a line
 # s["Reps list"] = [[a, b], [c, d]]
 # s["Weight"] = [x, y]
-def generateLineFromSeries(s):
+def generateCaptionLine(s):
     name, repsList, weights = s["Exercise Name"], s["Reps"], s["Weight"]
     if name == "Intensity":
         return f"Intensity: {repsList[0][0]}"
@@ -19,13 +19,15 @@ def generateLineFromSeries(s):
         weightStr = str(round(weight * 2) / 2).replace('.0', '')
         weightTag = f', {weightStr}lbs' if weight else ''
         block = ''
-        # Amrap rule: 4x4 -> 8 instead of 4/4/4/4/8
-        if len(set(reps)) == 2 and len(set(reps[:-1])) == 1:
+        # Amrap rule: 4x4 -> 8 instead of 4/4/4/4/8. Avoids 1x5 -> 6 format; will be 5/6 instead
+        if len(reps) > 2 and len(set(reps)) == 2 and len(set(reps[:-1])) == 1:
             block = f'{len(reps)-1}x{reps[0]} -> {reps[-1]}{weightTag}'
 
-        # When we have 1 rep count for all sets
+        # When we have 1 rep count for all sets. 3x12 format
         elif len(set(reps)) == 1:
             block = f'{len(reps)}x{reps[0]}{weightTag}'
+
+        # Varrying rep counts through the sets. 8/8/7/5 format
         else:
             repStr = '/'.join([str(rep) for rep in reps])
             block = f'{repStr}{weightTag}'
@@ -114,7 +116,7 @@ def main():
         df["Exercise Name"] = df["Exercise Name"].str.replace(" \(Machine\)", "")
 
         # Generate per exercise caption lines
-        df["Exercise line"] = df.apply(generateLineFromSeries, axis=1)
+        df["Exercise line"] = df.apply(generateCaptionLine, axis=1)
 
         # Generate per DATE caption lines (joins with newlines)
         df = df.groupby(["Date"])["Exercise line"].apply(lambda l: '\n'.join(l)).reset_index()
