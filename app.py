@@ -36,10 +36,19 @@ def generateLineFromSeries(s):
     return f'{name}: {meat}'
 
 
-def generateCaption(s, user_name, program_name):
+# Will change day_week_dict with each iteration
+# tbh not the smartest approach but hey monke code
+def generateCaption(s, user_name, program_name, day_week_dict):
     date, exerciseLine = s["Date parsed"], s["Exercise line"]
-    # Use global vars, get assigned during usage
-    header = f"{date}: {user_name}{f' {program_name}' if program_name else ''} week X day X"
+    header = f"{date}: {user_name}"
+    if program_name:
+        header +=  f" {program_name}"
+    if day_week_dict and day_week_dict["week"] > 0:
+        week, day, days_per_week = day_week_dict["week"], day_week_dict["day"], day_week_dict["days_per_week"]
+        header += f" week {week} day {day}"
+        # Decrement week and day
+        day_week_dict["week"] -= 1 if day == 1 else 0
+        day_week_dict["day"] = day - 1 if day != 1 else days_per_week
     return "\n".join([header, exerciseLine])
 
 
@@ -65,11 +74,25 @@ def main():
         return
 
     # Input options
-    num_caps = st.slider("How many captions", min_value=0,max_value=20, value=6)
     user_name = st.selectbox("Whos caption", ["AT", "JQ", "AJ", "DMA"])
     preset_program = st.selectbox("Which program", ["EGO", "JOJO", "JAW", None])
     custom_program = st.text_input("Or enter a custom program")
     program_name = custom_program if custom_program else preset_program
+
+    # Which week + day was the most recent workout? How many days per week?
+    st.write("### Week + day of most recent workout")
+    st.write("To create `week X day X` tag")
+    omit = st.checkbox("Omit the tag")
+    day_week_dict = None
+    if not omit:
+        days_per_week = st.number_input("Days per week", value=6, step=1)
+        week = st.number_input("Week #", value=1, step=1, min_value=0)
+        day = st.number_input("Day #", value=1, step=1, min_value=0)
+        day_week_dict = {
+            "day": day,
+            "week": week,
+            "days_per_week": days_per_week,
+        }
 
     if not user_name:
         return
@@ -85,6 +108,7 @@ def main():
         df = df.groupby(["Date", "Exercise Name"],sort=False).agg(list).reset_index()
 
         # Exercise name cleanup
+        # TODO: Add nicknames for exercises
         df["Exercise Name"] = df["Exercise Name"].str.replace(" \(Barbell\)", "")
         df["Exercise Name"] = df["Exercise Name"].str.replace(" \(Dumbbell\)", "")
         df["Exercise Name"] = df["Exercise Name"].str.replace(" \(Machine\)", "")
@@ -95,10 +119,11 @@ def main():
         # Generate per DATE caption lines (joins with newlines)
         df = df.groupby(["Date"])["Exercise line"].apply(lambda l: '\n'.join(l)).reset_index()
         df["Date parsed"] = df["Date"].dt.strftime("-%m/-%d").str.replace("-0", "-").str.replace("-", "")
-        df["Caption"] = df.apply(lambda s: generateCaption(s, user_name, program_name), axis=1)
+        df = df.sort_values("Date", ascending=False)
+        df["Caption"] = df.apply(lambda s: generateCaption(s, user_name, program_name, day_week_dict), axis=1)
 
         # Display to output
-        df = df.sort_values("Date", ascending=False)
+        num_caps = st.slider("How many captions", min_value=0,max_value=20, value=6)
         df.head(num_caps).apply(displayCaption, axis=1)
 
 
