@@ -55,11 +55,10 @@ def generateCaption(s, user_name, program_name, day_week_dict):
 
 
 def displayCaption(s):
-    caption = s["Caption"]
     st.write(
         f'''
         ```
-        {caption}
+        {s}
         '''
     )
 
@@ -126,7 +125,13 @@ def main():
 
         # Display to output
         num_caps = st.slider("How many captions", min_value=0,max_value=20, value=6)
-        df.head(num_caps).apply(displayCaption, axis=1)
+        captions = df.head(num_caps)["Caption"]
+        displayTogether = st.checkbox("Display together")
+        if displayTogether:
+            combined = captions.str.cat(sep="\n\n")
+            displayCaption(combined)
+        else:
+            captions.apply(displayCaption)
 
 
 main()
