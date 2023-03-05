@@ -124,7 +124,7 @@ def main():
         df["Caption"] = df.apply(lambda s: generateCaption(s, user_name, program_name, day_week_dict), axis=1)
 
         # Display to output
-        num_caps = st.slider("How many captions", min_value=0,max_value=20, value=6)
+        num_caps = st.slider("How many captions", min_value=0,max_value=40, value=6)
         captions = df.head(num_caps)["Caption"]
         displayTogether = st.checkbox("Display together")
         if displayTogether:
