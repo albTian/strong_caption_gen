@@ -111,25 +111,25 @@ def main():
 
         # Exercise name cleanup
         # TODO: Add nicknames for exercises 
-        df["Exercise Name"] = df["Exercise Name"].str.replace(" \(Barbell\)", "")
-        df["Exercise Name"] = df["Exercise Name"].str.replace(" \(Dumbbell\)", "")
-        df["Exercise Name"] = df["Exercise Name"].str.replace(" \(Machine\)", "")
+        df["Exercise Name"] = df["Exercise Name"].str.replace(" (Barbell)", "")
+        df["Exercise Name"] = df["Exercise Name"].str.replace(" (Dumbbell)", "")
+        df["Exercise Name"] = df["Exercise Name"].str.replace(" (Machine)", "")
 
-        # Calculate how many rows were in the last num_caps workouts, cuts off DF
+        # Cut off df to only number of captions 
         num_caps = st.slider("How many captions", min_value=0,max_value=40, value=6)
         unique_dates = df['Date'].unique()[::-1]
         last_workouts_dates = unique_dates[:num_caps]
         num_rows = df[df['Date'].isin(last_workouts_dates)].shape[0]
         df = df.tail(num_rows)
 
-        # Sort by date
-        # Create a new column 'Order' to preserve the original ordering of rows within each date
+        # Sort by date (creates temporary Order column)
         df['Order'] = df.groupby('Date').cumcount()
         df = df.sort_values(by=['Date', 'Order'], ascending=[False, True])
         df = df.drop(columns='Order')
 
         # Edit units, default lbs 
         df['Unit'] = 'lbs'
+        st.write("### Edit units if necessary")
         df = st.data_editor(df)
 
         # Generate per EXERCISE caption lines 
