@@ -110,23 +110,29 @@ def main():
         df = df.groupby(["Date", "Exercise Name"],sort=False).agg(list).reset_index()
 
         # Exercise name cleanup
-        # TODO: Add nicknames for exercises
+        # TODO: Add nicknames for exercises 
         df["Exercise Name"] = df["Exercise Name"].str.replace(" \(Barbell\)", "")
         df["Exercise Name"] = df["Exercise Name"].str.replace(" \(Dumbbell\)", "")
         df["Exercise Name"] = df["Exercise Name"].str.replace(" \(Machine\)", "")
 
-        # Need to do unit changing here... 
+        # Calculate how many rows were in the last num_caps workouts, cuts off DF
         num_caps = st.slider("How many captions", min_value=0,max_value=40, value=6)
-        # Calculate how many rows were in the last num_caps workouts 
         unique_dates = df['Date'].unique()[::-1]
         last_workouts_dates = unique_dates[:num_caps]
         num_rows = df[df['Date'].isin(last_workouts_dates)].shape[0]
-
         df = df.tail(num_rows)
 
-        # Generate per exercise caption lines 
-        df['Unit'] = 'lbs'      # default lbs
+        # Sort by date
+        # Create a new column 'Order' to preserve the original ordering of rows within each date
+        df['Order'] = df.groupby('Date').cumcount()
+        df = df.sort_values(by=['Date', 'Order'], ascending=[False, True])
+        df = df.drop(columns='Order')
+
+        # Edit units, default lbs 
+        df['Unit'] = 'lbs'
         df = st.data_editor(df)
+
+        # Generate per EXERCISE caption lines 
         df["Exercise line"] = df.apply(generateCaptionLine, axis=1)
 
         # Generate per DATE caption lines (joins with newlines)
@@ -134,8 +140,6 @@ def main():
         df["Date parsed"] = df["Date"].dt.strftime("-%m/-%d").str.replace("-0", "-").str.replace("-", "")
         df["Caption"] = df.apply(lambda s: generateCaption(s, user_name, program_name, day_week_dict), axis=1)
         df = df.sort_values("Date", ascending=False)
-
-
 
         # Display to output
         captions = df["Caption"]
