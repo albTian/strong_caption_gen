@@ -115,9 +115,18 @@ def main():
         df["Exercise Name"] = df["Exercise Name"].str.replace(" \(Dumbbell\)", "")
         df["Exercise Name"] = df["Exercise Name"].str.replace(" \(Machine\)", "")
 
-        # Generate per exercise caption lines
+        # Need to do unit changing here... 
+        num_caps = st.slider("How many captions", min_value=0,max_value=40, value=6)
+        # Calculate how many rows were in the last num_caps workouts 
+        unique_dates = df['Date'].unique()[::-1]
+        last_workouts_dates = unique_dates[:num_caps]
+        num_rows = df[df['Date'].isin(last_workouts_dates)].shape[0]
+
+        df = df.tail(num_rows)
+
+        # Generate per exercise caption lines 
         df['Unit'] = 'lbs'      # default lbs
-        df = st.data_editor(df) 
+        df = st.data_editor(df)
         df["Exercise line"] = df.apply(generateCaptionLine, axis=1)
 
         # Generate per DATE caption lines (joins with newlines)
@@ -126,11 +135,6 @@ def main():
         df["Caption"] = df.apply(lambda s: generateCaption(s, user_name, program_name, day_week_dict), axis=1)
         df = df.sort_values("Date", ascending=False)
 
-        # Need to do unit changing here...
-        num_caps = st.slider("How many captions", min_value=0,max_value=40, value=6)
-        # Calculate how many days
-        df = df.head(num_caps)
-        st.data_editor(df)
 
 
         # Display to output
