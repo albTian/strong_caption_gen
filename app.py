@@ -6,10 +6,10 @@ TEMP_CSV = 'temp.csv'
 
 
 # For List[Weight] and List[List[Reps]], generate a line
-# s["Reps list"] = [[a, b], [c, d]]
+# s["Reps list"] = [[a, b], [c, d]] 
 # s["Weight"] = [x, y]
 def generateCaptionLine(s):
-    name, repsList, weights = s["Exercise Name"], s["Reps"], s["Weight"]
+    name, repsList, weights, unit = s["Exercise Name"], s["Reps"], s["Weight"], s["Unit"]
     if name == "Intensity":
         return f"Intensity: {repsList[0][0]}"
 
@@ -17,7 +17,8 @@ def generateCaptionLine(s):
     for weight, reps in zip(weights, repsList):
         # Round to the nearest .5 (for floating point errors) and eliminate trailing .0
         weightStr = str(round(weight * 2) / 2).replace('.0', '')
-        weightTag = f', {weightStr}lbs' if weight else ''
+        # NOW WE GOT KILO PLATES MF YAAAA
+        weightTag = f', {weightStr}{unit}' if weight else ''
         block = ''
         # Amrap rule: 4x4 -> 8 instead of 4/4/4/4/8. Avoids 1x5 -> 6 format; will be 5/6 instead
         if len(reps) > 2 and len(set(reps)) == 2 and len(set(reps[:-1])) == 1:
@@ -64,7 +65,7 @@ def displayCaption(s):
 
 
 def main():
-    st.write("### Either upload or paste strong data")
+    st.write("### Either upload or paste strong data brehhh cnme o n")
     # Input csv
     csv_file = st.file_uploader("Upload a strong export", type=["csv"])
     text_input = st.text_area("Paste strong export")
@@ -98,7 +99,7 @@ def main():
     if not user_name:
         return
 
-    with st.spinner("Loading..."):
+    with st.spinner("Loading..."): 
         # Start parsing
         csv_to_open = csv_file if csv_file else TEMP_CSV
         df = pd.read_csv(csv_to_open, na_filter=False)
@@ -115,17 +116,25 @@ def main():
         df["Exercise Name"] = df["Exercise Name"].str.replace(" \(Machine\)", "")
 
         # Generate per exercise caption lines
+        df['Unit'] = 'lbs'      # default lbs
+        df = st.data_editor(df) 
         df["Exercise line"] = df.apply(generateCaptionLine, axis=1)
 
         # Generate per DATE caption lines (joins with newlines)
         df = df.groupby(["Date"])["Exercise line"].apply(lambda l: '\n'.join(l)).reset_index()
         df["Date parsed"] = df["Date"].dt.strftime("-%m/-%d").str.replace("-0", "-").str.replace("-", "")
-        df = df.sort_values("Date", ascending=False)
         df["Caption"] = df.apply(lambda s: generateCaption(s, user_name, program_name, day_week_dict), axis=1)
+        df = df.sort_values("Date", ascending=False)
+
+        # Need to do unit changing here...
+        num_caps = st.slider("How many captions", min_value=0,max_value=40, value=6)
+        # Calculate how many days
+        df = df.head(num_caps)
+        st.data_editor(df)
+
 
         # Display to output
-        num_caps = st.slider("How many captions", min_value=0,max_value=40, value=6)
-        captions = df.head(num_caps)["Caption"]
+        captions = df["Caption"]
         displayTogether = st.checkbox("Display together")
         if displayTogether:
             combined = captions.str.cat(sep="\n\n")
