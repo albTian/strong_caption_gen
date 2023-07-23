@@ -74,7 +74,7 @@ def displayCaption(s):
 
 
 def main():
-    st.write("### Either upload or paste strong data!")
+    st.write("# Either upload or paste strong data!")
     # Input csv
     csv_file = st.file_uploader("Upload a strong export", type=["csv"])
     text_input = st.text_area("Paste strong export")
