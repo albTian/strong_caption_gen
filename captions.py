@@ -86,7 +86,7 @@ def main():
 
     # Input options
     user_name = st.selectbox("Whos caption", ["AT", "JQ", "AJ", "DMA"])
-    preset_program = st.selectbox("Which program", ["EGO", "JOJO", "JAW", None])
+    preset_program = st.selectbox("Which program", ["BANE", "EGO", "JOJO", "JAW", None])
     custom_program = st.text_input("Or enter a custom program")
     program_name = custom_program if custom_program else preset_program
 
@@ -160,10 +160,10 @@ def main():
             .str.replace("-0", "-")
             .str.replace("-", "")
         )
+        df = df.sort_values("Date", ascending=False)
         df["Caption"] = df.apply(
             lambda s: generateCaption(s, user_name, program_name, day_week_dict), axis=1
         )
-        df = df.sort_values("Date", ascending=False)
 
         # Display to output
         captions = df["Caption"]
