@@ -4,6 +4,8 @@ import pandas as pd
 # defaults
 TEMP_CSV = "temp.csv"
 
+DEFAULT_KG_EXERCISES = ["Squat", "Power Clean", "Bench Press", "Deadlift"]
+
 
 # For List[Weight] and List[List[Reps]], generate a line
 # s["Reps list"] = [[a, b], [c, d]]
@@ -129,19 +131,47 @@ def main():
         df["Exercise Name"] = df["Exercise Name"].str.replace(" (Machine)", "")
 
         # Cut off df to only number of captions
-        num_caps = st.slider("How many captions", min_value=0, max_value=40, value=6)
-        unique_dates = df["Date"].unique()[::-1]
-        last_workouts_dates = unique_dates[:num_caps]
-        num_rows = df[df["Date"].isin(last_workouts_dates)].shape[0]
-        df = df.tail(num_rows)
+        display_mode = st.radio("Display mode", ["Last N workouts", "Since date"])
+
+        if display_mode == "Last N workouts":
+            num_caps = st.number_input(
+                "How many captions", min_value=1, max_value=1000, value=20, step=1
+            )
+            unique_dates = df["Date"].unique()[::-1]
+            last_workouts_dates = unique_dates[:num_caps]
+            df = df[df["Date"].isin(last_workouts_dates)]
+        else:
+            min_date = df["Date"].min()
+            max_date = df["Date"].max()
+            since_date = st.date_input(
+                "Display all workouts since",
+                value=min_date,
+                min_value=min_date,
+                max_value=max_date,
+            )
+            df = df[df["Date"].dt.date >= since_date]
 
         # Sort by date (creates temporary Order column)
         df["Order"] = df.groupby("Date").cumcount()
-        df = df.sort_values(by=["Date", "Order"], ascending=[False, True])
-        df = df.drop(columns="Order")
 
         # Edit units, default lbs
         df["Unit"] = "lbs"
+
+        # Add exercise selector for kg units
+        available_exercises = sorted(df["Exercise Name"].unique())
+
+        # Filter default exercises to only include ones that exist in available exercises
+        default_kg_exercises = [
+            ex for ex in DEFAULT_KG_EXERCISES if ex in available_exercises
+        ]
+
+        kg_exercises = st.multiselect(
+            "Select exercises recorded in kg",
+            options=available_exercises,
+            default=default_kg_exercises,
+        )
+        df.loc[df["Exercise Name"].isin(kg_exercises), "Unit"] = "kg"
+
         st.write("### Edit units if necessary")
         df = st.data_editor(df)
 
